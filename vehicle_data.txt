@@ -1,1 +1,1 @@
-{"abcd": {"lat": "13", "lon": "15"}}
+{"test-rickshaw": {"lat": 26.186895, "lon": 91.692759, "timestamp": 1542606464}}

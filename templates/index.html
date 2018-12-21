@@ -24,6 +24,9 @@
         </div>
         <div class="col-3"></div>
     </div>
+    <div class="container-fluid" style="margin-top: 20px; text-align: center">
+        <button onclick="getVehicleData()">Refresh Data</button>
+    </div>
     <script>
         var map;
         function initMap() {
@@ -31,11 +34,88 @@
                 center: {lat: 26.1928807, lng: 91.6928825},
                 zoom: 15
             });
+        }
+        var markers = [];
+        var infowindows = [];
+        var marker_count = 0;
+        function getVehicleData(){
+            var d = new Date();
+            var time = parseInt(d.getTime()/1000);
+            $.get("/vehicle_track", function (data) {
+                var vehicle_ids = Object.keys(data);
+                for (var i=0; i<markers.length; i++){
+                    markers[i].setMap(null);
+                }
+                for (var i=0; i<markers.length; i++){
+                    markers.pop();
+                }
+                marker_count = 0;
+                for (var i=0; i<vehicle_ids.length; i++){
+                    var latlng = Object.getOwnPropertyDescriptor(data,vehicle_ids[i]).value;
+                    var time_diff = new Date(d.getTime()-latlng.timestamp*1000);
+                    var time_diff_str = time_diff.getUTCHours()+" Hours "+time_diff.getUTCMinutes()+" Minutes "+time_diff.getUTCSeconds()+" Seconds ";
+                    if (time_diff.getTime()>86400000){
+                        time_diff_str = "more than a day ";
+                    }
+                    var contentString = '<div>'+
+                            '<h5> Vehicle ID: '+vehicle_ids[i]+'</h5>'+
+                            '<div>'+
+                            '<p> Updated '+time_diff_str+'ago.</p>'+
+                            '</div>'+
+                            '</div>';
+                    var marker = new google.maps.Marker({
+                        position: {lat: latlng.lat, lng: latlng.lon},
+                        map: map,
+                        title: "Vehicle ID: "+vehicle_ids[i]+"\nUpdated "+time_diff_str+"ago."
+                    });
+                    var infowindow = new google.maps.InfoWindow();
+                    markers.push(marker);
+                    marker_count++;
+                    google.maps.event.addListener(marker,'click', (function(marker,content,infowindow){
+                        return function() {
+                            infowindow.setContent(content);
+                            infowindow.open(map,marker);
+                        };
+                    })(marker,contentString,infowindow));
 
+                }
+            });
+            $.get("/mqtt_data", function (data) {
+                var mqtt_ids = Object.keys(data);
+                for (var i=0; i<mqtt_ids.length; i++){
+                    var latlng = Object.getOwnPropertyDescriptor(data,mqtt_ids[i]).value;
+                    var time_diff = new Date(d.getTime()-latlng.timestamp*1000);
+                    var time_diff_str = time_diff.getUTCHours()+" Hours "+time_diff.getUTCMinutes()+" Minutes "+time_diff.getUTCSeconds()+" Seconds ";
+                    if (time_diff.getTime()>86400000){
+                        time_diff_str = "more than a day ";
+                    }
+                    var contentString = '<div>'+
+                            '<h5> Smart System ID: '+mqtt_ids[i]+'</h5>'+
+                            '<div>'+
+                            '<p> Data: '+latlng.data+'</p>'+
+                            '<p> Updated '+time_diff_str+'ago.</p>'+
+                            '</div>'+
+                            '</div>';
+                    var marker = new google.maps.Marker({
+                        position: {lat: latlng.lat, lng: latlng.lon},
+                        map: map,
+                        title: "Smart System ID: "+mqtt_ids[i]+"\nData: "+latlng.data+"\nUpdated "+time_diff_str+"ago."
+                    });
+                    var infowindow = new google.maps.InfoWindow();
+                    markers.push(marker);
+                    marker_count++;
+                    google.maps.event.addListener(marker,'click', (function(marker,content,infowindow){
+                        return function() {
+                            infowindow.setContent(content);
+                            infowindow.open(map,marker);
+                        };
+                    })(marker,contentString,infowindow));
+                }
+            });
         }
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB6LUgNSBcFoNQKa7QNLup-92qLZzjHAl0&callback=initMap" async defer></script>
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
 </body>
